@@ -103,6 +103,7 @@ npm install
 - #### Mutations
 
   ![image](https://user-images.githubusercontent.com/48709072/142982411-8ca36c09-1d73-4510-a7e9-40e9fd8a24c8.png)
+![下载](https://github.com/cenengzhou/test/assets/61579148/913c268e-7755-418b-bfa6-24de1d8caed2)
 
 - #### Queries
 
