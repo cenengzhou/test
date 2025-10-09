@@ -1,1 +1,106 @@
-asdfeee
+var requireDir = require('require-dir');
+var gulp = require('gulp');
+var sass = require('gulp-sass');
+var minimist = require('minimist');
+var cleanCss = require('gulp-clean-css');
+var rename = require('gulp-rename');
+var fs = require('fs');
+
+gulp.paths = {
+  bowerComponents: 'app/bower_components',
+  dist: 'www',
+  preRequisite: ['app/prerequisite/**/*.js'],
+  angular: ['app/bower_components/angular/angular.js'],
+  ionic: ['app/bower_components/ionic/release/js/ionic.js','app/bower_components/ionic/release/js/ionic-angular.js'],
+  ionicPlatformSrc: ['app/bower_components/ionic-platform-web-client/dist/ionic.io.bundle.js'],
+  venderJs: ['app/bower_components/ion-snackbar/snackbar.js'],
+  vendorCss: ['app/bower_components/quill/quill.snow.css', 'app/bower_components/ion-snackbar/snackbar.css'],
+//    ionicPlatform: ['app/bower_components/ionic-platform-web-client/dist/ionic.io.bundle.min.js'],
+  //ionicPlatform: ['node_modules/@ionic/cloud/dist/bundle/ionic.cloud.min.js'],
+  ionicPlatform: [],
+  jsFiles: ['app/**/*.js', '!app/prerequisite/**/*.js', '!app/bower_components/**/*.js', '!app/namespace.js'],
+  jsonFiles: ['app/**/*.json', '!app/bower_components/**/*.json'],
+  templates: ['app/*/templates/**/*'],
+  contrib: ['gulpfile.js', 'gulp/**/*.js', 'hooks/**/*.js'],
+  karma: ['test/karma/**/*.js'],
+  protractor: ['test/protractor/**/*.js'],
+  version: './version.json',
+  sass: 'scss/**/*.scss',
+  sassIncludePaths: [
+    'app/bower_components/ionic/scss',
+    'app/bower_components/ionic/scss/ionicons'
+  ]
+};
+
+var options = gulp.options = minimist(process.argv.slice(2));
+
+
+
+// load .gulp_setttings.json
+var task = options._[0];
+var gulpSettings;
+if (fs.existsSync('./gulp/.gulp_settings.json')) {
+    gulpSettings = require('./gulp/.gulp_settings.json');
+    var defaults = gulpSettings.defaults;
+    if (defaults) {
+        if (task && task.length && defaults[task]) {
+            var taskDefaults = defaults[task];
+            for (var key in taskDefaults) {
+                if (options[key] === undefined) {
+                    options[key] = taskDefaults[key];
+                }
+            }
+        }
+    }
+}
+
+// environment
+options.env = options.env || 'dev';
+// print options
+if (defaults && defaults[task]) {
+    $log.debug(chalk.green('defaults for task \'' + task + '\': '), defaults[task]);
+}
+// cordova command one of cordova's build commands?
+if (options.cordova) {
+    var cmds = ['build', 'run', 'emulate', 'prepare', 'serve'];
+    for (var i = 0, cmd; ((cmd = cmds[i])) ; i++) {
+        if (options.cordova.indexOf(cmd) >= 0) {
+            options.cordovaBuild = true;
+            break;
+        }
+    }
+}
+
+// load tasks
+requireDir('./gulp');
+  
+gulp.task('sass', function() {
+    return gulp.src(gulp.paths.sass)
+      .pipe(sass({
+        includePaths: gulp.paths.sassIncludePaths,
+        outputStyle: 'expanded'
+      }).on('error', sass.logError))
+      .pipe(gulp.dest('www/css'));
+});
+
+gulp.task('cordova', ['sass'], function() {
+    // cordova build command & gulp build
+    if (options.cordovaBuild && options.build !== false) {
+        return gulp.start('cordova-with-build');
+    }
+        // cordova build command & no gulp build
+    else if (options.cordovaBuild && options.build === false) {
+        return gulp.start('cordova-only-resources');
+    }
+        // cordova non-build command
+    else if (options.cordova) {
+        return gulp.start('cordova');
+    }
+        // just watch when cordova option not present
+    else {
+        return gulp.start('watch');
+    }
+});
+
+// default task
+gulp.task('default', ['sass', 'cordova']);
